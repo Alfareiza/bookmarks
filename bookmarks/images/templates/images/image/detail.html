@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ image.title }}{% endblock %}
+
+{% block content %}
+  <h1>{{ image.title }}</h1>
+  {% load thumbnail %}
+  <a href="{{ image.image.url }}">
+    <img src="{% thumbnail image.image 300x0 quality=100 %}" class="image-detail">
+  </a>
+  {% with total_likes=image.users_like.count users_like=image.users_like.all %}
+    <div class="image-info">
+      <div>
+        <span class="count">
+          <span class="total">
+            {{ total_likes }}
+          </span>
+          like{{ total_likes|pluralize }}
+        </span>
+         <span class="count">
+          <span class="total">
+            {{ total_views }}
+          </span>
+          view{{ total_views|pluralize }}
+        </span>
+        <!--Aqui se realizará una peticion via ajax. Pag 185.-->
+        <a href="#" data-id="{{ image.id }}" data-action="{% if request.user in users_like %}un{% endif %}like" class="like button">
+          {% if request.user not in users_like %}
+            Like
+          {% else %}
+            Unlike
+          {% endif %}
+        </a>
+      </div>
+      {{ image.description|linebreaks }}
+    </div>
+    <div class="image-likes">
+      {% for user in users_like %}
+        <div>
+          <img src="{{ user.profile.photo.url }}">
+          <p>{{ user.first_name }}</p>
+        </div>
+      {% empty %}
+        Nobody likes this image yet.
+      {% endfor %}
+    </div>
+  {% endwith %}
+{% endblock %}
+
+{% block domready %}
+  // Pag 186.
+  // Declarado en base.html y sobre escrito aqui
+  // Recibe información del front, capturada con jquery y hace llamados a views con ajax.
+
+  // $('a.like') Busca todos los elementos <a> que tengan la clase "like"
+  $('a.like').click(function(e){ // Creada funcion de handler para cuanco haga click.
+    e.preventDefault();  // Evita el comportamiento default del elemento <a> y no habrá redireccionamientos
+    $.post('{% url "images:like" %}',  // Realiza el post al path "images:like" donde tmbn se cargará en la bd
+      // Enviando esto como body
+      {
+        id: $(this).data('id'),  // Asi se obtiene info del html usando jQuery
+        action: $(this).data('action')
+      },
+      // Función callback que será ejecutada cuando haya respuesta del post
+      function(data){
+        if (data['status'] == 'ok'){
+          // Si la respuesta es ok, cambia el atributo action del html
+          var previous_action = $('a.like').data('action');  // Obtiene el valor que está en el html
+
+          // Cambia el data-action
+          $('a.like').data('action', previous_action == 'like' ?
+          'unlike' : 'like');
+          // Cambia el texto del link
+          $('a.like').text(previous_action == 'like' ? 'Unlike' :
+          'Like');
+
+          // Actualiza total likes
+          //Convierte a texto el valor del html y lo guarda en la variable
+          var previous_likes = parseInt($('span.count .total').text());
+          // Cambia el valor agregando o quitando uno
+          $('span.count .total').text(previous_action == 'like' ?
+          previous_likes + 1 : previous_likes - 1);
+        }
+      }
+    );
+  });
+{% endblock %}

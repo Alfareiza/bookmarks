@@ -1,0 +1,21 @@
+{% load thumbnail %}
+<!-- Pag. 189 Usado para devolver resultados de req ajax. -->
+{% for image in images %}
+  <div class="image">
+    <a href="{{ image.get_absolute_url }}">
+      <!-- Genera imagen rectangular miniatura de 300x300px. -->
+      <!-- la funcion smart indica que la imagen será recortada
+       incremental hasta el tamaño solicitado, removiendo pedazos
+       en los bordes -->
+      {% thumbnail image.image 300x300 crop="smart" as im %}
+      <a href="{{ image.get_absolute_url }}">
+        <img src="{{ im.url }}">
+      </a>
+    </a>
+    <div class="info">
+      <a href="{{ image.get_absolute_url }}" class="title">
+        {{ image.title }}
+      </a>
+    </div>
+  </div>
+{% endfor %}

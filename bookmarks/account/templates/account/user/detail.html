@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load thumbnail %}
+
+{% block title %}{{ user.get_full_name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ user.get_full_name }}</h1>
+  <div class="profile-info">
+    <img src="{% thumbnail user.profile.photo 180x180 %}" class="user-detail">
+  </div>
+  {% with total_followers=user.followers.count %}
+    <span class="count">
+      <span class="total">{{ total_followers }}</span>
+      follower{{ total_followers|pluralize }}
+    </span>
+    <!--
+    El data-id y data-action son enviados por medio de un request ajax
+    a la ruta user_follow que sucede en el momento que se clica sobre
+    el botón. Mientras tanto existe un codigo ajax que se activa al clicar
+    sobre el botón y hace el llamado de la vista.
+    -->
+    <a href="#" data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un{% endif %}follow" class="follow button">
+      {% if request.user not in user.followers.all %}
+        Follow
+      {% else %}
+        Unfollow
+      {% endif %}
+    </a>
+    <div id="image-list" class="image-container">
+      {% include "images/image/list_ajax.html" with images=user.images_created.all %}
+    </div>
+  {% endwith %}
+{% endblock %}
+
+{% block domready %}
+  // Pag. 203
+  // Código js para seguir o dejar de seguir a alguien
+  $('a.follow').click(function(e){
+    e.preventDefault();
+    $.post('{% url "user_follow" %}',
+      {
+        id: $(this).data('id'),
+        action: $(this).data('action') // es action pq en el front se definió el 'data-action'
+      },
+      function(data){
+        if (data['status'] == 'ok') {
+          var previous_action = $('a.follow').data('action');
+
+          // toggle data-action
+          $('a.follow').data('action',
+            previous_action == 'follow' ? 'unfollow' : 'follow');
+          // toggle link text
+          $('a.follow').text(
+            previous_action == 'follow' ? 'Unfollow' : 'Follow');
+
+          // update total followers
+          // Se crea variable con el valor de la linea 13 y se pasa a entero
+          var previous_followers = parseInt($('span.count .total').text());
+
+        // Actualiza el total de followers con base en la acción realizada
+       // aqui mismo, osea que no toma ese dato de la bd.
+          $('span.count .total').text(previous_action == 'follow' ?
+          previous_followers + 1 : previous_followers - 1);
+        }
+      }
+    );
+  });
+{% endblock %}

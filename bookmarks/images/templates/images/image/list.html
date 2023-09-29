@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Images bookmarked{% endblock %}
+
+<!-- Pag. 189 Usado para listar imagenes usando tmbn list_ajax.html.  -->
+<!-- Desde aqui es llamado list_ajax.html con javascript en busca de paginas
+adicionales, cuando el scroll hacia abajo sea realizado -->
+
+{% block content %}
+  <h1>Images bookmarked</h1>
+  <div id="image-list">
+    {% include "images/image/list_ajax.html" %}
+  </div>
+{% endblock %}
+
+{% block domready %}
+  // Pag. 190
+  // Scroll Infinito
+  var page = 1;  // Guarda el número de la pag actual
+  var empty_page = false;  // Si se recibe una pagina vacia, se interrumpe el envio de otras requisiciones.
+  var block_request = false;  // Evita hacer reqs cuando ya hay una en ejecución
+
+  // Scroll Infinito
+  $(window).scroll(function() {  // Captura el evento de scroll y crea funcion
+    // Altura total del documento menos altura de ventana
+    // Se le resta 200, de modo que cargará la próxima página cuando el usuario
+    // haga el scroll
+    var margin = $(document).height() - $(window).height() - 200;
+
+    // Si el usuario hizo scroll, empty_page es falso y block_request tmbn
+    if  ($(window).scrollTop() > margin && empty_page == false && block_request == false) {
+      block_request = true;  // Se coloca true para evitar mas llamados mientras se ejecuta este
+      page += 1;
+      $.get('?page=' + page, function(data) { // Aqui se hace el lllamado ajax
+       // la respuesta del get, viene en data
+       if(data == '') {
+          // Si data es vacío es pq la pagina que retorno la vista esta vazia.
+          empty_page = true;
+        }
+        else {
+          // Si la respuesta es true, concatena el resultado con el
+         // elemento html de id image-list
+          block_request = false;
+          $('#image-list').append(data);
+        }
+      });
+    }
+  });
+
+// Firebug para debugar ajax
+{% endblock %}
